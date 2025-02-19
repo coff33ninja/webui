@@ -3242,3 +3242,9 @@
 2025-02-19 19:21:30,297 - INFO - Server is ready and accepting connections
 2025-02-19 19:22:30,298 - INFO - Server is running and ready
 2025-02-19 19:22:30,299 - INFO - Creating window with URL: http://127.0.0.1:8080/
+2025-02-19 19:25:51,095 - INFO - Window closed
+2025-02-19 19:25:51,096 - INFO - Starting cleanup...
+2025-02-19 19:25:51,097 - INFO - Config saved successfully
+2025-02-19 19:25:51,097 - INFO - Cleanup completed
+2025-02-19 19:25:51,100 - INFO - Stopped Open WebUI server
+2025-02-19 19:25:51,974 - INFO - Stopped Open WebUI server
