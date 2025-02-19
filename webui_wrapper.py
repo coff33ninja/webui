@@ -1,17 +1,16 @@
+
 import os
 import sys
 import json
-import subprocess
 import atexit
-import time
 import winshell
+import subprocess
+import time
+import socket
 from pathlib import Path
 from win32com.client import Dispatch
 import logging
-import webbrowser
-import socket
-import requests
-from urllib.parse import urlparse
+import webview
 
 # Set up logging
 logging.basicConfig(
@@ -27,7 +26,7 @@ class WebUIWrapper:
     def __init__(self):
         self.config_path = Path.home() / '.webui_config.json'
         self.load_config()
-        self.server_process = None
+        self.window = None
         self.cleaned_up = False
         logging.info("WebUIWrapper initialized")
 
@@ -40,12 +39,18 @@ class WebUIWrapper:
             except Exception as e:
                 logging.error(f"Error loading config: {e}")
                 self.config = {
-                    'last_url': 'http://127.0.0.1:8080/'
+                    'window_title': 'Web UI',
+                    'window_width': 1024,
+                    'window_height': 768,
+                    'start_url': 'http://127.0.0.1:8080/'
                 }
         else:
             logging.info("No config file found, using defaults")
             self.config = {
-                'last_url': 'http://127.0.0.1:8080/'
+                'window_title': 'Web UI',
+                'window_width': 1024,
+                'window_height': 768,
+                'start_url': 'http://127.0.0.1:8080/'
             }
 
     def save_config(self):
@@ -55,73 +60,6 @@ class WebUIWrapper:
             logging.info("Config saved successfully")
         except Exception as e:
             logging.error(f"Error writing config to file: {e}")
-
-    def wait_for_server(self, url, timeout=30):
-        """Wait for server to be ready"""
-        parsed_url = urlparse(url)
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            try:
-                response = requests.get(url)
-                if response.status_code == 200:
-                    logging.info(f"Server is ready at {url}")
-                    return True
-            except requests.RequestException:
-                time.sleep(1)
-        logging.error(f"Server failed to start after {timeout} seconds")
-        return False
-
-    def start_server(self):
-        # Start the open-webui server in a hidden window
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        startupinfo.wShowWindow = subprocess.SW_HIDE
-
-        try:
-            logging.info("Starting server...")
-            self.server_process = subprocess.Popen(
-                [sys.executable, '-m', 'open_webui.main'],
-                startupinfo=startupinfo,
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
-
-            # Wait for server to be ready
-            if not self.wait_for_server(self.config['last_url']):
-                raise Exception("Server failed to start")
-
-            logging.info("Server started successfully")
-
-        except FileNotFoundError:
-            logging.error("Error: Failed to start open-webui module. Please ensure the package is properly installed.")
-            sys.exit(1)
-        except Exception as e:
-            logging.error(f"Unexpected error starting server: {str(e)}")
-            sys.exit(1)
-
-    def cleanup(self):
-        if self.cleaned_up:
-            return
-        self.cleaned_up = True
-        logging.info("Starting cleanup...")
-
-        # Save configuration first
-        self.save_config()
-
-        if self.server_process:
-            try:
-                logging.info("Terminating server process...")
-                self.server_process.terminate()
-                self.server_process.wait(timeout=5)
-                logging.info("Server process terminated")
-            except subprocess.TimeoutExpired:
-                try:
-                    logging.warning("Server process did not terminate, forcing kill...")
-                    self.server_process.kill()
-                    logging.info("Server process killed")
-                except Exception:
-                    logging.error("Failed to kill server process")
-            except Exception as e:
-                logging.error(f"Error during server cleanup: {str(e)}")
 
     def create_shortcut(self):
         """Create a desktop shortcut to run the web UI"""
@@ -145,6 +83,111 @@ class WebUIWrapper:
             logging.error(f"Failed to create shortcut: {str(e)}")
             return False
 
+    def cleanup(self):
+        if self.cleaned_up:
+            return
+        self.cleaned_up = True
+        logging.info("Starting cleanup...")
+        self.save_config()
+        logging.info("Cleanup completed")
+
+    def start_server(self, method='direct'):
+        """Start the Open WebUI server using specified method
+        
+        Args:
+            method (str): Startup method to use. Options are:
+                - 'direct': Direct subprocess execution (default)
+                - 'piped': Subprocess with piped output
+                - 'threaded': Background thread execution
+        """
+        try:
+            # Activate virtual environment if present
+            venv_path = os.path.join(os.path.dirname(__file__), 'venv')
+            python_exec = sys.executable
+            
+            if os.path.exists(venv_path):
+                python_exec = os.path.join(venv_path, 'Scripts', 'python.exe')
+                if not os.path.exists(python_exec):
+                    raise Exception(f"Virtual environment Python executable not found at: {python_exec}")
+            
+            if method == 'direct':
+                # Method 1: Direct execution
+                self.server_process = subprocess.Popen(
+                    ['open-webui', 'serve'],
+                    cwd=os.path.dirname(__file__),
+                    env=os.environ.copy()
+                )
+                logging.info("Started Open WebUI server using direct method")
+            
+            elif method == 'piped':
+                # Method 2: Piped output
+                self.server_process = subprocess.Popen(
+                    ['open-webui', 'serve'],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    cwd=os.path.dirname(__file__),
+                    env=os.environ.copy()
+                )
+                # Log server output in separate threads
+                def log_stream(stream, prefix):
+                    for line in stream:
+                        logging.info(f"[Server] {prefix}: {line.strip()}")
+                
+                import threading
+                threading.Thread(target=log_stream, args=(self.server_process.stdout, "stdout"), daemon=True).start()
+                threading.Thread(target=log_stream, args=(self.server_process.stderr, "stderr"), daemon=True).start()
+                logging.info("Started Open WebUI server using piped method")
+            
+            elif method == 'threaded':
+                # Method 3: Background thread
+                def run_server():
+                    subprocess.run(
+                        ['open-webui', 'serve'],
+                        cwd=os.path.dirname(__file__),
+                        env=os.environ.copy()
+                    )
+                
+                import threading
+                self.server_thread = threading.Thread(target=run_server, daemon=True)
+                self.server_thread.start()
+                logging.info("Started Open WebUI server using threaded method")
+            
+            else:
+                raise ValueError(f"Invalid server startup method: {method}")
+            
+            # Wait for server to be ready
+            time.sleep(5)  # Initial wait
+            max_attempts = 12
+            for attempt in range(max_attempts):
+                try:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    result = sock.connect_ex(('127.0.0.1', 8080))
+                    sock.close()
+                    if result == 0:
+                        logging.info("Server is ready and accepting connections")
+                        return True
+                except Exception as e:
+                    logging.warning(f"Server check failed (attempt {attempt + 1}/{max_attempts}): {e}")
+                time.sleep(5)
+            
+            logging.error("Server failed to start within the expected time")
+            return False
+            
+        except Exception as e:
+            logging.error(f"Failed to start Open WebUI server: {e}")
+            return False
+
+    def stop_server(self):
+        """Stop the Open WebUI server"""
+        if hasattr(self, 'server_process') and self.server_process:
+            try:
+                self.server_process.terminate()
+                self.server_process.wait(timeout=5)
+                logging.info("Stopped Open WebUI server")
+            except Exception as e:
+                logging.error(f"Error stopping server: {e}")
+
     def run(self):
         try:
             # Create desktop shortcut if it doesn't exist
@@ -152,37 +195,53 @@ class WebUIWrapper:
             if not os.path.exists(shortcut_path):
                 self.create_shortcut()
 
-            # Start the server before opening browser
-            self.start_server()
+            # Start Open WebUI server with different methods
+            methods = ['direct', 'piped', 'threaded']
+            for method in methods:
+                logging.info(f"Attempting to start server using method: {method}")
+                if self.start_server(method=method):
+                    break
+                if method == methods[-1]:
+                    raise Exception("Failed to start Open WebUI server after trying all methods")
+                logging.warning(f"Server startup failed with method {method}, trying next method...")
+                time.sleep(10)
 
             # Register cleanup on exit
             atexit.register(self.cleanup)
+            atexit.register(self.stop_server)
 
-            # Open the default browser
+            # Wait for server to be ready and verify it's running
+            time.sleep(60)  # Increased wait time for server initialization
             try:
-                logging.info(f"Opening browser at {self.config['last_url']}")
-                webbrowser.open(self.config['last_url'])
+                # Verify server is running by checking if port is open
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                result = sock.connect_ex(('127.0.0.1', 8080))
+                if result != 0:
+                    raise Exception("Server failed to start on port 8080")
+                sock.close()
+                logging.info("Server is running and ready")
 
-                # Keep the script running until Ctrl+C
-                logging.info("Press Ctrl+C to exit")
-                while True:
-                    time.sleep(1)
+                # Create and start the window
+                logging.info(f"Creating window with URL: {self.config['start_url']}")
+                self.window = webview.create_window(
+                    self.config['window_title'],
+                    self.config['start_url'],
+                    width=self.config['window_width'],
+                    height=self.config['window_height']
+                )
+                webview.start()
+                logging.info("Window closed")
 
-                    # Check if server is still running
-                    if self.server_process and self.server_process.poll() is not None:
-                        logging.error("Server process has stopped unexpectedly")
-                        break
-
-            except KeyboardInterrupt:
-                logging.info("Received keyboard interrupt, shutting down...")
             except Exception as e:
-                logging.error(f"Error while running: {e}")
+                logging.error(f"Error while running window: {e}")
             finally:
                 self.cleanup()
+                self.stop_server()
 
         except Exception as e:
             logging.error(f"Unexpected error in run(): {e}")
             self.cleanup()
+            self.stop_server()
             sys.exit(1)
 
 if __name__ == '__main__':
