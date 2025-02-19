@@ -1,4 +1,4 @@
-import pywebview as webview
+import webview
 import os
 import sys
 import json
@@ -6,7 +6,10 @@ import subprocess
 import atexit
 import threading
 import time
+import winshell
 from pathlib import Path
+import os
+from win32com.client import Dispatch
 
 class WebUIWrapper:
     def __init__(self):
@@ -67,7 +70,27 @@ class WebUIWrapper:
     def on_closed(self):
         self.cleanup()
 
+    def create_shortcut(self):
+        """Create a desktop shortcut to run the web UI"""
+        desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+        path = os.path.join(desktop, "WebUI Wrapper.lnk")
+        target = str(Path(sys.executable).parent / "python.exe")
+        w_dir = str(Path(__file__).parent)
+        icon = str(Path(__file__).parent / "webui_wrapper.py")
+
+        shell = Dispatch('WScript.Shell')
+        shortcut = shell.CreateShortCut(path)
+        shortcut.Targetpath = target
+        shortcut.Arguments = 'webui_wrapper.py'
+        shortcut.WorkingDirectory = w_dir
+        shortcut.IconLocation = icon
+        shortcut.save()
+
     def run(self):
+        # Create desktop shortcut if it doesn't exist
+        if not os.path.exists(os.path.join(winshell.desktop(), "WebUI Wrapper.lnk")):
+            self.create_shortcut()
+
         # Start the server before creating the window
         self.start_server()
 

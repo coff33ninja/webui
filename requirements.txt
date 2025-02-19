@@ -1,2 +1,4 @@
 pywebview
+winshell
+pywin32
 open-webui
