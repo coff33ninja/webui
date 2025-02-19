@@ -80,7 +80,7 @@ class WebUIWrapper:
         try:
             logging.info("Starting server...")
             self.server_process = subprocess.Popen(
-                ['open-webui', 'serve'],
+                [sys.executable, '-m', 'open_webui.main'],
                 startupinfo=startupinfo,
                 creationflags=subprocess.CREATE_NO_WINDOW
             )
@@ -92,7 +92,7 @@ class WebUIWrapper:
             logging.info("Server started successfully")
 
         except FileNotFoundError:
-            logging.error("Error: open-webui command not found. Please ensure it is installed and available in your PATH.")
+            logging.error("Error: Failed to start open-webui module. Please ensure the package is properly installed.")
             sys.exit(1)
         except Exception as e:
             logging.error(f"Unexpected error starting server: {str(e)}")

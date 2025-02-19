@@ -1,0 +1,12 @@
+2025-02-19 17:30:08,777 - INFO - Starting WebUI Wrapper application
+2025-02-19 17:30:08,777 - INFO - Config loaded successfully
+2025-02-19 17:30:08,777 - INFO - WebUIWrapper initialized
+2025-02-19 17:30:08,777 - INFO - Starting server...
+2025-02-19 17:30:38,790 - ERROR - Server failed to start after 30 seconds
+2025-02-19 17:30:38,791 - ERROR - Unexpected error starting server: Server failed to start
+2025-02-19 17:33:59,189 - INFO - Starting WebUI Wrapper application
+2025-02-19 17:33:59,190 - INFO - Config loaded successfully
+2025-02-19 17:33:59,190 - INFO - WebUIWrapper initialized
+2025-02-19 17:33:59,191 - INFO - Starting server...
+2025-02-19 17:34:29,208 - ERROR - Server failed to start after 30 seconds
+2025-02-19 17:34:29,208 - ERROR - Unexpected error starting server: Server failed to start
