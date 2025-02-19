@@ -1,4 +1,5 @@
 pywebview
 winshell
 pywin32
+cefpython3
 open-webui

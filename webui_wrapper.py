@@ -1,4 +1,3 @@
-import webview
 import os
 import sys
 import json
@@ -8,70 +7,69 @@ import time
 import winshell
 from pathlib import Path
 from win32com.client import Dispatch
+import logging
+import webbrowser
+import socket
+import requests
+from urllib.parse import urlparse
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('webui_wrapper.log')
+    ]
+)
 
 class WebUIWrapper:
     def __init__(self):
         self.config_path = Path.home() / '.webui_config.json'
         self.load_config()
         self.server_process = None
-        self.cleaned_up = False  # prevent duplicate cleanup
+        self.cleaned_up = False
+        logging.info("WebUIWrapper initialized")
 
     def load_config(self):
         if self.config_path.exists():
             try:
                 with open(self.config_path, 'r') as f:
                     self.config = json.load(f)
-                # Make sure window_size and window_pos are tuples (JSON saves them as lists)
-                self.config['window_size'] = tuple(self.config.get('window_size', (1024, 768)))
-                if self.config.get('window_pos'):
-                    self.config['window_pos'] = tuple(self.config['window_pos'])
+                logging.info("Config loaded successfully")
             except Exception as e:
-                print(f"Error loading config, using defaults: {e}")
+                logging.error(f"Error loading config: {e}")
                 self.config = {
-                    'window_size': (1024, 768),
-                    'window_pos': (0, 0),
                     'last_url': 'http://127.0.0.1:8080/'
                 }
         else:
+            logging.info("No config file found, using defaults")
             self.config = {
-                'window_size': (1024, 768),
-                'window_pos': None,
                 'last_url': 'http://127.0.0.1:8080/'
             }
 
     def save_config(self):
         try:
-            if hasattr(self, 'window') and self.window:
-                # Wrap in try/except incase attributes are not available
-                try:
-                    width = self.window.width
-                    height = self.window.height
-                    self.config['window_size'] = (width, height)
-                except Exception as e:
-                    self.config['window_size'] = (1024, 768)
-                    print(f"Warning: Could not retrieve window size: {e}")
-                try:
-                    # Some backends might not support window.x and window.y
-                    x = getattr(self.window, 'x', 0)
-                    y = getattr(self.window, 'y', 0)
-                    self.config['window_pos'] = (x, y)
-                except Exception as e:
-                    self.config['window_pos'] = (0, 0)
-                    print(f"Warning: Could not retrieve window position: {e}")
-            else:
-                self.config['window_size'] = (1024, 768)
-                self.config['window_pos'] = (0, 0)
-        except Exception as e:
-            # Fallback to default values if any error occurs
-            print(f"Error saving config: {e}")
-            self.config['window_size'] = (1024, 768)
-            self.config['window_pos'] = (0, 0)
-
-        try:
             with open(self.config_path, 'w') as f:
                 json.dump(self.config, f)
+            logging.info("Config saved successfully")
         except Exception as e:
-            print(f"Error writing config to file: {e}")
+            logging.error(f"Error writing config to file: {e}")
+
+    def wait_for_server(self, url, timeout=30):
+        """Wait for server to be ready"""
+        parsed_url = urlparse(url)
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                response = requests.get(url)
+                if response.status_code == 200:
+                    logging.info(f"Server is ready at {url}")
+                    return True
+            except requests.RequestException:
+                time.sleep(1)
+        logging.error(f"Server failed to start after {timeout} seconds")
+        return False
 
     def start_server(self):
         # Start the open-webui server in a hidden window
@@ -80,46 +78,50 @@ class WebUIWrapper:
         startupinfo.wShowWindow = subprocess.SW_HIDE
 
         try:
+            logging.info("Starting server...")
             self.server_process = subprocess.Popen(
                 ['open-webui', 'serve'],
                 startupinfo=startupinfo,
                 creationflags=subprocess.CREATE_NO_WINDOW
             )
-            # Wait for server to start (could be replaced with a more robust check)
-            time.sleep(2)
-            
-            # Verify the process is running
-            if self.server_process.poll() is not None:
-                raise Exception("Server process failed to start")
-                
+
+            # Wait for server to be ready
+            if not self.wait_for_server(self.config['last_url']):
+                raise Exception("Server failed to start")
+
+            logging.info("Server started successfully")
+
         except FileNotFoundError:
-            print("Error: open-webui command not found. Please ensure it is installed and available in your PATH.")
+            logging.error("Error: open-webui command not found. Please ensure it is installed and available in your PATH.")
             sys.exit(1)
         except Exception as e:
-            print(f"Unexpected error starting server: {str(e)}")
+            logging.error(f"Unexpected error starting server: {str(e)}")
             sys.exit(1)
 
     def cleanup(self):
         if self.cleaned_up:
             return
         self.cleaned_up = True
+        logging.info("Starting cleanup...")
+
         # Save configuration first
         self.save_config()
 
         if self.server_process:
             try:
+                logging.info("Terminating server process...")
                 self.server_process.terminate()
                 self.server_process.wait(timeout=5)
+                logging.info("Server process terminated")
             except subprocess.TimeoutExpired:
                 try:
+                    logging.warning("Server process did not terminate, forcing kill...")
                     self.server_process.kill()
+                    logging.info("Server process killed")
                 except Exception:
-                    pass
+                    logging.error("Failed to kill server process")
             except Exception as e:
-                print(f"Error during server cleanup: {str(e)}")
-
-    def on_closed(self):
-        self.cleanup()
+                logging.error(f"Error during server cleanup: {str(e)}")
 
     def create_shortcut(self):
         """Create a desktop shortcut to run the web UI"""
@@ -137,59 +139,57 @@ class WebUIWrapper:
             shortcut.WorkingDirectory = w_dir
             shortcut.IconLocation = icon
             shortcut.save()
-            print(f"Shortcut created successfully at: {path}")
+            logging.info(f"Shortcut created successfully at: {path}")
             return True
         except Exception as e:
-            print(f"Failed to create shortcut: {str(e)}")
+            logging.error(f"Failed to create shortcut: {str(e)}")
             return False
 
     def run(self):
-        # Create desktop shortcut if it doesn't exist
-        shortcut_path = os.path.join(winshell.desktop(), "WebUI Wrapper.lnk")
-        if not os.path.exists(shortcut_path):
-            self.create_shortcut()
-
-        # Start the server before creating the window
-        self.start_server()
-
-        # Register cleanup on exit (this helps if the user kills the app unexpectedly)
-        atexit.register(self.cleanup)
-
-        # Create window with saved dimensions
         try:
-            width, height = self.config.get('window_size', (1024, 768))
-            self.window = webview.create_window(
-                'Web UI',
-                self.config.get('last_url', 'http://127.0.0.1:8080/'),
-                width=width,
-                height=height
-            )
-        except Exception as e:
-            print(f"Error creating webview window: {e}")
-            self.cleanup()
-            sys.exit(1)
+            # Create desktop shortcut if it doesn't exist
+            shortcut_path = os.path.join(winshell.desktop(), "WebUI Wrapper.lnk")
+            if not os.path.exists(shortcut_path):
+                self.create_shortcut()
 
-        # Restore window position if saved and if supported
-        if self.config.get('window_pos') and hasattr(self.window, 'move'):
+            # Start the server before opening browser
+            self.start_server()
+
+            # Register cleanup on exit
+            atexit.register(self.cleanup)
+
+            # Open the default browser
             try:
-                self.window.move(*self.config['window_pos'])
+                logging.info(f"Opening browser at {self.config['last_url']}")
+                webbrowser.open(self.config['last_url'])
+
+                # Keep the script running until Ctrl+C
+                logging.info("Press Ctrl+C to exit")
+                while True:
+                    time.sleep(1)
+
+                    # Check if server is still running
+                    if self.server_process and self.server_process.poll() is not None:
+                        logging.error("Server process has stopped unexpectedly")
+                        break
+
+            except KeyboardInterrupt:
+                logging.info("Received keyboard interrupt, shutting down...")
             except Exception as e:
-                print(f"Warning: Unable to restore window position: {e}")
+                logging.error(f"Error while running: {e}")
+            finally:
+                self.cleanup()
 
-        # Attach event handler to ensure cleanup on window close
-        try:
-            self.window.events.closed += self.on_closed
         except Exception as e:
-            print(f"Error setting close event: {e}")
-
-        # Start the UI inside a try/except to catch any unexpected errors that might cause a crash
-        try:
-            webview.start()
-        except Exception as e:
-            print(f"Error encountered during UI execution: {e}")
+            logging.error(f"Unexpected error in run(): {e}")
             self.cleanup()
             sys.exit(1)
 
 if __name__ == '__main__':
-    app = WebUIWrapper()
-    app.run()
+    try:
+        logging.info("Starting WebUI Wrapper application")
+        app = WebUIWrapper()
+        app.run()
+    except Exception as e:
+        logging.error(f"Fatal error: {e}")
+        sys.exit(1)
