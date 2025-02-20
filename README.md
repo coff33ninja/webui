@@ -56,8 +56,8 @@ When you start the app, it:
 
 ## 📋 Requirements
 
-- Internet connection for first-time setup
-- Git (for cloning the repository)
+- [Internet connection for first-time setup](https://www.speedtest.net/)
+- [Git](https://git-scm.com/) (for cloning the repository)
 - [Python 3.11](https://www.python.org/downloads/release/python-3119/) prefered (installer will guide you if missing)
 - [Ollama](https://ollama.com/) installed and running
 
