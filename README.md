@@ -1,37 +1,65 @@
 # WebUI Wrapper
 
-A Python-based browser wrapper for open-webui with persistent window settings and native Windows integration.
+A user-friendly application wrapper for open-webui with persistent settings and native OS integration.
 
-## Features
+## 🚀 Quick Setup (For Everyone!)
 
-- Persistent window size and position
-- Automatically starts open-webui server in background
-- Native Windows integration with batch script
-- Asynchronous server management
-- Type-safe configuration
-- Comprehensive logging
-- Built with Python 3.11 and PyWebView
+### Windows Users
+1. **Super Easy Start:**
+   - Just double-click `run.bat`
+   - That's it! The application will set everything up automatically
 
-## Prerequisites
+2. **Want a Desktop Shortcut?**
+   - Right-click `create_shortcut.ps1`
+   - Choose "Run with PowerShell"
+   - You'll get a nice desktop icon to click next time!
 
-- Python 3.11 or newer
-- Windows OS (for native shortcut support)
+### Mac Users
+1. **Easy Start:**
+   - Open the folder in Finder
+   - Right-click `run.sh` and select "Open With" → "Terminal"
+   - Click "Open" if you see a security warning
+   - The app will start automatically!
+
+2. **Desktop Shortcut:**
+   - Open Terminal in the folder
+   - Type: `chmod +x create_shortcut.sh && ./create_shortcut.sh`
+   - You'll get a clickable icon on your desktop
+
+### Linux Users
+1. **Quick Start:**
+   - Right-click in the folder and select "Open in Terminal"
+   - Type: `chmod +x run.sh && ./run.sh`
+   - The app will launch automatically
+
+2. **Desktop Shortcut:**
+   - In Terminal, type: `chmod +x create_shortcut.sh && ./create_shortcut.sh`
+   - You'll get a desktop shortcut for easy access
+
+## ⚙️ What's Happening Behind the Scenes?
+
+When you start the app, it:
+1. Checks if you have Python installed (and installs it if needed)
+2. Sets up a virtual environment (like a clean room for the app)
+3. Installs all required packages
+4. Starts the WebUI server
+5. Opens the application window
+
+## 🔍 Features
+
+- Easy one-click startup
+- Remembers window size and position
+- Automatic server management
+- Works on Windows, Mac, and Linux
+- Native OS integration
+- Clear error messages if something goes wrong
+
+## 📋 Requirements
+
+- Python 3.11 or newer (will guide you to install if missing)
+- Internet connection for first-time setup
 - [Ollama](https://ollama.com/) installed and running
 
-## Quick Start
-
-1. **Direct Launch**
-   Simply double-click `run.bat` to start the application. It will:
-   - Create a virtual environment if needed
-   - Install required dependencies
-   - Launch the WebUI
-
-2. **Desktop Shortcut (Optional)**
-   To create a desktop shortcut:
-   - Right-click `create_shortcut.ps1`
-   - Select "Run with PowerShell"
-   - A shortcut will be created on your desktop
-
-## For Developers
+## 🛠️ For Developers
 
 ### Project Structure
