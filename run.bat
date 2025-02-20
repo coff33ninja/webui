@@ -34,7 +34,7 @@ if not exist venv (
     )
     echo Installing dependencies...
     call venv\Scripts\activate
-    pip install -r requirements.txt
+    pip install --upgrade --requirement requirements.txt
     if %ERRORLEVEL% neq 0 (
         echo Failed to install dependencies
         pause
