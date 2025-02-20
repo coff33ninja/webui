@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import Optional
+import socket
+from typing import Optional, Tuple
 from asyncio.subprocess import Process
 import aiohttp
 
@@ -24,6 +25,8 @@ class ServerManager:
         # The working directory (if needed) to locate your server's executable
         self.cwd = cwd
         self.process: Optional[Process] = None
+        self._port = 8080
+        self._host = '127.0.0.1'
 
     async def start_server(self, method: str = 'direct') -> bool:
         """
@@ -71,6 +74,19 @@ class ServerManager:
                 logging.info(f"[Server {prefix}] {line.decode().strip()}")
             else:
                 break
+
+    async def check_port(self, timeout: float = 1.0) -> bool:
+        """Check if the server port is open and accepting connections"""
+        try:
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(self._host, self._port),
+                timeout=timeout
+            )
+            writer.close()
+            await writer.wait_closed()
+            return True
+        except (ConnectionRefusedError, asyncio.TimeoutError):
+            return False
 
     async def stop_server(self) -> None:
         if self.process:

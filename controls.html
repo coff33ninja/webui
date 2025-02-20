@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebUI Controls</title>
+    <style>
+        .menu-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            z-index: 1000;
+        }
+        .menu-bar button {
+            padding: 6px 12px;
+            margin: 0 5px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .menu-bar button:hover {
+            background: #e9ecef;
+        }
+        .menu-bar button:disabled {
+            background: #f8f9fa;
+            color: #999;
+            cursor: not-allowed;
+        }
+    </style>
+
+</head>
+<body>
+    <div class="menu-bar">
+        <button id="startBtn" onclick="startServer()">Start Server</button>
+        <button id="stopBtn" onclick="stopServer()" disabled>Stop Server</button>
+        <button id="reloadBtn" onclick="reloadPage()">Reload Page</button>
+    </div>
+
+
+    <script>
+        const api = window.pywebview.api;
+
+        function updateButtons(running) {
+            document.getElementById('startBtn').disabled = running;
+            document.getElementById('stopBtn').disabled = !running;
+        }
+
+        async function startServer() {
+            const success = await api.startServer();
+            if (success) {
+                updateButtons(true);
+            }
+        }
+
+        async function stopServer() {
+            const success = await api.stopServer();
+            if (success) {
+                updateButtons(false);
+            }
+        }
+
+        function reloadPage() {
+            api.reloadPage();
+        }
+
+        // Initial button state
+        updateButtons(false);
+    </script>
+</body>
+</html>

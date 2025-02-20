@@ -7,6 +7,7 @@ from pathlib import Path
 from config import load_config, save_config, AppConfig
 from server_manager import ServerManager
 from ui_manager import UIManager
+from typing import Optional
 
 # Set up logging to both file and console
 log_file = Path(os.path.expanduser('~')) / '.webui' / 'webui.log'
@@ -27,38 +28,52 @@ async def main() -> None:
         logging.info("Starting WebUI")
         logging.info(f"Python version: {sys.version}")
         logging.info(f"Working directory: {os.getcwd()}")
-        
+
         # Load configuration using pydantic
         config: AppConfig = load_config()
         logging.info(f"Configuration loaded: {config.to_json()}")
 
-        # Initialize and start the server manager
+        # Initialize server manager
         server_manager = ServerManager()
-        server_started = False
-        
-        for method in ['direct', 'piped']:
-            logging.info(f"Attempting to start server using method: {method}")
-            if await server_manager.start_server(method=method):
-                server_started = True
-                break
-            else:
-                logging.warning(f"Server startup failed using method: {method}")
 
-        if not server_started:
-            logging.error("All server startup methods failed. Exiting.")
-            sys.exit(1)
+        # Check if server is already running
+        if await server_manager.check_port():
+            logging.info("Server is already running on port 8080")
+        else:
+            # Attempt to start server if not running
+            server_started = False
+            for method in ['direct', 'piped']:
+                logging.info(f"Attempting to start server using method: {method}")
+                if await server_manager.start_server(method=method):
+                    server_started = True
+                    break
+                else:
+                    logging.warning(f"Server startup failed using method: {method}")
+
+            if not server_started:
+                logging.error("All server startup methods failed. Exiting.")
+                sys.exit(1)
+
+        def cleanup_server():
+            try:
+                if server_manager.process:
+                    asyncio.run(server_manager.stop_server())
+            except (ProcessLookupError, AttributeError):
+                logging.info("Server process already terminated")
 
         # Register cleanup functions
         atexit.register(lambda: save_config(config))
-        atexit.register(lambda: asyncio.run(server_manager.stop_server()))
+        atexit.register(cleanup_server)
 
-        # Start the UI window (blocking call)
-        ui = UIManager(config)
+
+        # Start the UI window with server manager
+        ui = UIManager(config, server_manager)
         ui.run_window()
 
-        # After window closes, stop the server
-        await server_manager.stop_server()
-        
+        # After window closes, stop the server if running
+        if await server_manager.check_port():
+            await server_manager.stop_server()
+
     except Exception as e:
         logging.exception("Fatal error occurred")
         sys.exit(1)
