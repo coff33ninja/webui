@@ -3278,3 +3278,29 @@
 2025-02-19 21:21:16,978 - INFO - Cleanup completed
 2025-02-19 21:21:17,117 - INFO - Stopped Open WebUI server
 2025-02-19 21:21:19,246 - INFO - Stopped Open WebUI server
+2025-02-20 08:54:07,291 - INFO - Starting WebUI Wrapper application
+2025-02-20 08:54:07,293 - INFO - Config loaded successfully
+2025-02-20 08:54:07,293 - INFO - WebUIWrapper initialized
+2025-02-20 08:54:07,293 - INFO - Attempting to start server using method: direct
+2025-02-20 08:54:07,299 - INFO - Started Open WebUI server using direct method
+2025-02-20 08:54:40,404 - INFO - Server is ready and accepting connections
+2025-02-20 08:55:40,406 - INFO - Server is running and ready
+2025-02-20 08:55:40,406 - ERROR - Error while running window: 'start_url'
+2025-02-20 08:55:40,406 - INFO - Starting cleanup...
+2025-02-20 08:55:40,406 - INFO - Config saved successfully
+2025-02-20 08:55:40,406 - INFO - Cleanup completed
+2025-02-20 08:55:40,409 - INFO - Stopped Open WebUI server
+2025-02-20 08:55:40,409 - INFO - Stopped Open WebUI server
+2025-02-20 08:58:50,295 - INFO - Starting WebUI Wrapper application
+2025-02-20 08:58:50,295 - INFO - Config loaded successfully
+2025-02-20 08:58:50,295 - INFO - WebUIWrapper initialized
+2025-02-20 08:58:50,296 - INFO - Attempting to start server using method: direct
+2025-02-20 08:58:50,298 - INFO - Started Open WebUI server using direct method
+2025-02-20 08:59:02,331 - INFO - Server is ready and accepting connections
+2025-02-20 09:00:02,332 - INFO - Server is running and ready
+2025-02-20 09:00:02,332 - ERROR - Error while running window: 'start_url'
+2025-02-20 09:00:02,332 - INFO - Starting cleanup...
+2025-02-20 09:00:02,332 - INFO - Config saved successfully
+2025-02-20 09:00:02,334 - INFO - Cleanup completed
+2025-02-20 09:00:02,335 - INFO - Stopped Open WebUI server
+2025-02-20 09:00:02,335 - INFO - Stopped Open WebUI server
