@@ -31,27 +31,27 @@ class WebUIWrapper:
         logging.info("WebUIWrapper initialized")
 
     def load_config(self):
+        # Default configuration
+        self.config = {
+            'window_title': 'Web UI',
+            'window_width': 1024,
+            'window_height': 768,
+            'start_url': 'http://127.0.0.1:8080/'
+        }
+
+        # Try to load from config file if it exists
         if self.config_path.exists():
             try:
                 with open(self.config_path, 'r') as f:
-                    self.config = json.load(f)
+                    file_config = json.load(f)
+                    # Merge file config with defaults
+                    self.config.update(file_config)
                 logging.info("Config loaded successfully")
             except Exception as e:
-                logging.error(f"Error loading config: {e}")
-                self.config = {
-                    'window_title': 'Web UI',
-                    'window_width': 1024,
-                    'window_height': 768,
-                    'start_url': 'http://127.0.0.1:8080/'
-                }
+                logging.error(f"Error loading config: {e}. Using default configuration")
         else:
-            logging.info("No config file found, using defaults")
-            self.config = {
-                'window_title': 'Web UI',
-                'window_width': 1024,
-                'window_height': 768,
-                'start_url': 'http://127.0.0.1:8080/'
-            }
+            logging.info("No config file found, using default configuration")
+
 
     def save_config(self):
         try:
@@ -93,7 +93,7 @@ class WebUIWrapper:
 
     def start_server(self, method='direct'):
         """Start the Open WebUI server using specified method
-        
+
         Args:
             method (str): Startup method to use. Options are:
                 - 'direct': Direct subprocess execution (default)
@@ -104,12 +104,12 @@ class WebUIWrapper:
             # Activate virtual environment if present
             venv_path = os.path.join(os.path.dirname(__file__), 'venv')
             python_exec = sys.executable
-            
+
             if os.path.exists(venv_path):
                 python_exec = os.path.join(venv_path, 'Scripts', 'python.exe')
                 if not os.path.exists(python_exec):
                     raise Exception(f"Virtual environment Python executable not found at: {python_exec}")
-            
+
             if method == 'direct':
                 # Method 1: Direct execution
                 self.server_process = subprocess.Popen(
@@ -118,7 +118,7 @@ class WebUIWrapper:
                     env=os.environ.copy()
                 )
                 logging.info("Started Open WebUI server using direct method")
-            
+
             elif method == 'piped':
                 # Method 2: Piped output
                 self.server_process = subprocess.Popen(
@@ -133,12 +133,12 @@ class WebUIWrapper:
                 def log_stream(stream, prefix):
                     for line in stream:
                         logging.info(f"[Server] {prefix}: {line.strip()}")
-                
+
                 import threading
                 threading.Thread(target=log_stream, args=(self.server_process.stdout, "stdout"), daemon=True).start()
                 threading.Thread(target=log_stream, args=(self.server_process.stderr, "stderr"), daemon=True).start()
                 logging.info("Started Open WebUI server using piped method")
-            
+
             elif method == 'threaded':
                 # Method 3: Background thread
                 def run_server():
@@ -147,15 +147,15 @@ class WebUIWrapper:
                         cwd=os.path.dirname(__file__),
                         env=os.environ.copy()
                     )
-                
+
                 import threading
                 self.server_thread = threading.Thread(target=run_server, daemon=True)
                 self.server_thread.start()
                 logging.info("Started Open WebUI server using threaded method")
-            
+
             else:
                 raise ValueError(f"Invalid server startup method: {method}")
-            
+
             # Wait for server to be ready
             time.sleep(5)  # Initial wait
             max_attempts = 12
@@ -170,10 +170,10 @@ class WebUIWrapper:
                 except Exception as e:
                     logging.warning(f"Server check failed (attempt {attempt + 1}/{max_attempts}): {e}")
                 time.sleep(5)
-            
+
             logging.error("Server failed to start within the expected time")
             return False
-            
+
         except Exception as e:
             logging.error(f"Failed to start Open WebUI server: {e}")
             return False
@@ -222,13 +222,19 @@ class WebUIWrapper:
                 logging.info("Server is running and ready")
 
                 # Create and start the window
+                # Ensure start_url is valid
+                if not self.config.get('start_url'):
+                    self.config['start_url'] = 'http://127.0.0.1:8080/'
+                    logging.warning("start_url was missing, using default")
+
                 logging.info(f"Creating window with URL: {self.config['start_url']}")
                 self.window = webview.create_window(
-                    self.config['window_title'],
+                    self.config.get('window_title', 'Web UI'),
                     self.config['start_url'],
-                    width=self.config['window_width'],
-                    height=self.config['window_height']
+                    width=self.config.get('window_width', 1024),
+                    height=self.config.get('window_height', 768)
                 )
+
                 webview.start()
                 logging.info("Window closed")
 
