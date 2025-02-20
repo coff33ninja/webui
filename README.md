@@ -56,8 +56,9 @@ When you start the app, it:
 
 ## 📋 Requirements
 
-- Python 3.11 or newer (installer will guide you if missing)
 - Internet connection for first-time setup
+- Git (for cloning the repository)
+- [Python 3.11](https://www.python.org/downloads/release/python-3119/) prefered (installer will guide you if missing)
 - [Ollama](https://ollama.com/) installed and running
 
 ## 🛠️ For Developers
@@ -94,7 +95,7 @@ webui/
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/coff33ninja/webui
    cd webui
    ```
 2. Create a virtual environment:
@@ -136,6 +137,18 @@ A: Pull the latest version and restart the app – it will update automatically.
 - Ensure Ollama is running
 - Try running the launcher script again
 - Open an issue if you need further assistance
+
+## Resource Optimization Philosophy
+
+One of the primary motivations behind this wrapper is to maximize the computational resources available on your machine. Traditional browser-based interfaces, while familiar, tend to consume a significant amount of RAM and CPU power—resources that could otherwise be dedicated to running AI models or processing data. This wrapper is designed to offload as much of that overhead as possible by minimizing the reliance on a full browser window. Instead, it leverages native OS integration and lightweight scripting to launch and manage the interface in a more resource-friendly manner. In essence, your system allocates more power to the core functions of Open WebUI—without modifying any of its core functionality—delivering a smoother and more efficient user experience.
+
+## Remote Access and Flexibility
+
+For users who prefer to use a browser or need remote access, Open WebUI remains fully accessible. By default, it binds to 0.0.0.0:8080, so you can connect using your computer name, domain name, or IP address. This ensures that whether you’re accessing the interface locally or remotely, you can enjoy the benefits of the original Open WebUI without compromise.
+
+## Continuous Improvement Note
+
+I’m always tinkering—constantly adding features and refining the wrapper based on every little idea that comes to mind. As I study and experiment along the way, you might occasionally notice duplicate fixes or iterative updates. Rest assured, this process is all about learning and enhancing the user experience without changing the core functionality of Open WebUI. Your patience and feedback are greatly appreciated as the wrapper evolves!
 
 ## 📜 License
 
