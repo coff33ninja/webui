@@ -4896,3 +4896,17 @@
 2025-02-20 10:01:53,934 - INFO - Cleanup completed
 2025-02-20 10:01:53,936 - INFO - Stopped Open WebUI server
 2025-02-20 10:01:54,939 - INFO - Stopped Open WebUI server
+2025-02-20 11:14:43,224 - INFO - Starting WebUI Wrapper application
+2025-02-20 11:14:43,224 - INFO - Config loaded successfully
+2025-02-20 11:14:43,224 - INFO - WebUIWrapper initialized
+2025-02-20 11:14:43,224 - INFO - Attempting to start server using method: direct
+2025-02-20 11:14:43,224 - INFO - Started Open WebUI server using direct method
+2025-02-20 11:15:02,288 - INFO - Server is ready and accepting connections
+2025-02-20 11:16:02,289 - INFO - Server is running and ready
+2025-02-20 11:16:02,289 - INFO - Creating window with URL: http://127.0.0.1:8080/
+2025-02-20 11:16:17,759 - INFO - Window closed
+2025-02-20 11:16:17,759 - INFO - Starting cleanup...
+2025-02-20 11:16:17,775 - INFO - Config saved successfully
+2025-02-20 11:16:17,775 - INFO - Cleanup completed
+2025-02-20 11:16:17,776 - INFO - Stopped Open WebUI server
+2025-02-20 11:16:18,626 - INFO - Stopped Open WebUI server
