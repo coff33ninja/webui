@@ -61,6 +61,11 @@ When you start the app, it:
 - [Python 3.11](https://www.python.org/downloads/release/python-3119/) prefered (installer will guide you if missing)
 - [Ollama](https://ollama.com/) installed and running
 
+## Upgrading Open-Webui
+   ```bash
+pip install --upgrade open-webui
+   ```
+   
 ## 🛠️ For Developers
 
 ### Project Structure
