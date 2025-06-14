@@ -23,17 +23,26 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-REM Create virtual environment if it doesn't exist
-if not exist venv (
-    echo Virtual environment not found! Creating one...
-    python -m venv venv
+REM Detect virtual environment directory
+set VENV_DIR=
+if exist .venv (
+    set VENV_DIR=.venv
+) else if exist venv (
+    set VENV_DIR=venv
+)
+
+REM Create virtual environment if neither exists
+if not defined VENV_DIR (
+    echo No virtual environment found! Creating .venv...
+    python -m venv .venv
     if %ERRORLEVEL% neq 0 (
         echo Failed to create virtual environment
         pause
         exit /b 1
     )
+    set VENV_DIR=.venv
     echo Installing dependencies...
-    call venv\Scripts\activate
+    call .venv\Scripts\activate
     pip install --upgrade --requirement requirements.txt
     if %ERRORLEVEL% neq 0 (
         echo Failed to install dependencies
@@ -41,11 +50,11 @@ if not exist venv (
         exit /b 1
     )
 ) else (
-    echo Virtual environment found. Activating...
+    echo Virtual environment found in %VENV_DIR%. Activating...
 )
 
 REM Activate virtual environment and run the application
-call venv\Scripts\activate
+call %VENV_DIR%\Scripts\activate
 if %ERRORLEVEL% neq 0 (
     echo Failed to activate virtual environment
     pause
@@ -53,8 +62,9 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo Starting WebUI...
-venv\Scripts\python.exe main.py
+%VENV_DIR%\Scripts\python.exe main.py
 if %ERRORLEVEL% neq 0 (
     echo Application exited with error code %ERRORLEVEL%
     pause
+    exit /b 1
 )

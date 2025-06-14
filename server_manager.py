@@ -1,7 +1,6 @@
 import asyncio
 import logging
-import socket
-from typing import Optional, Tuple
+from typing import Optional
 from asyncio.subprocess import Process
 import aiohttp
 
@@ -21,12 +20,37 @@ async def wait_for_server(url: str, timeout: int = 60, interval: int = 5) -> boo
     return False
 
 class ServerManager:
-    def __init__(self, cwd: str = None) -> None:
+    def __init__(self, cwd: Optional[str] = None) -> None:
         # The working directory (if needed) to locate your server's executable
         self.cwd = cwd
         self.process: Optional[Process] = None
         self._port = 8080
         self._host = '127.0.0.1'
+        self._monitor_task: Optional[asyncio.Task] = None
+        self._connection_callback = None
+        self._last_state = None
+
+    def set_connection_callback(self, callback):
+        """Set a callback to be called when connection state changes."""
+        self._connection_callback = callback
+
+    async def monitor_port(self, interval: float = 2.0):
+        """Monitor the server port and call the callback on state change."""
+        while True:
+            is_up = await self.check_port()
+            if is_up != self._last_state:
+                self._last_state = is_up
+                if self._connection_callback:
+                    cb = self._connection_callback
+                    if asyncio.iscoroutinefunction(cb):
+                        await cb(is_up)
+                    else:
+                        cb(is_up)
+            await asyncio.sleep(interval)
+
+    def start_monitoring(self, interval: float = 2.0):
+        if self._monitor_task is None or self._monitor_task.done():
+            self._monitor_task = asyncio.create_task(self.monitor_port(interval))
 
     async def start_server(self, method: str = 'direct') -> bool:
         """
@@ -48,8 +72,10 @@ class ServerManager:
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE
                 )
-                asyncio.create_task(self._log_stream(self.process.stdout, "STDOUT"))
-                asyncio.create_task(self._log_stream(self.process.stderr, "STDERR"))
+                if self.process.stdout:
+                    asyncio.create_task(self._log_stream(self.process.stdout, "STDOUT"))
+                if self.process.stderr:
+                    asyncio.create_task(self._log_stream(self.process.stderr, "STDERR"))
             else:
                 raise ValueError(f"Invalid startup method: {method}")
 
@@ -96,3 +122,4 @@ class ServerManager:
                 logging.info("Server terminated successfully")
             except asyncio.TimeoutError:
                 logging.error("Server did not terminate in time")
+            self.process = None

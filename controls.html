@@ -41,9 +41,14 @@
 </head>
 <body>
     <div class="menu-bar">
+        <span id="statusIndicator" style="display: flex; align-items: center; margin-right: 10px;">
+            <span id="statusDot" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#999;margin-right:6px;"></span>
+            <span id="statusText" style="font-size:13px;color:#666;">Checking...</span>
+        </span>
         <button id="startBtn" onclick="startServer()">Start Server</button>
         <button id="stopBtn" onclick="stopServer()" disabled>Stop Server</button>
         <button id="reloadBtn" onclick="reloadPage()">Reload Page</button>
+        <button id="shutdownBtn" onclick="shutdownApp()">Shutdown</button>
     </div>
 
 
@@ -55,10 +60,32 @@
             document.getElementById('stopBtn').disabled = !running;
         }
 
+        async function updateStatus() {
+            try {
+                const running = await api.getServerStatus();
+                const dot = document.getElementById('statusDot');
+                const text = document.getElementById('statusText');
+                if (running) {
+                    dot.style.background = '#28a745';
+                    text.textContent = 'Server Running';
+                } else {
+                    dot.style.background = '#dc3545';
+                    text.textContent = 'Server Stopped';
+                }
+                updateButtons(running);
+            } catch (e) {
+                const dot = document.getElementById('statusDot');
+                const text = document.getElementById('statusText');
+                dot.style.background = '#999';
+                text.textContent = 'Status Unknown';
+            }
+        }
+
         async function startServer() {
             const success = await api.startServer();
             if (success) {
                 updateButtons(true);
+                updateStatus();
             }
         }
 
@@ -66,6 +93,7 @@
             const success = await api.stopServer();
             if (success) {
                 updateButtons(false);
+                updateStatus();
             }
         }
 
@@ -73,8 +101,13 @@
             api.reloadPage();
         }
 
-        // Initial button state
-        updateButtons(false);
+        function shutdownApp() {
+            api.shutdownApp();
+        }
+
+        // Initial button state and status
+        updateStatus();
+        setInterval(updateStatus, 2000);
     </script>
 </body>
 </html>

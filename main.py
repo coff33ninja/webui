@@ -7,10 +7,9 @@ from pathlib import Path
 from config import load_config, save_config, AppConfig
 from server_manager import ServerManager
 from ui_manager import UIManager
-from typing import Optional
 
 # Set up logging to both file and console
-log_file = Path(os.path.expanduser('~')) / '.webui' / 'webui.log'
+log_file: Path = Path(os.path.expanduser('~')) / '.webui' / 'webui.log'
 log_file.parent.mkdir(parents=True, exist_ok=True)
 
 logging.basicConfig(
@@ -21,6 +20,13 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+
+def cleanup_server(server_manager: ServerManager) -> None:
+    try:
+        if server_manager.process:
+            asyncio.run(server_manager.stop_server())
+    except (ProcessLookupError, AttributeError):
+        logging.info("Server process already terminated")
 
 async def main() -> None:
     try:
@@ -34,14 +40,14 @@ async def main() -> None:
         logging.info(f"Configuration loaded: {config.to_json()}")
 
         # Initialize server manager
-        server_manager = ServerManager()
+        server_manager: ServerManager = ServerManager()
 
         # Check if server is already running
         if await server_manager.check_port():
             logging.info("Server is already running on port 8080")
         else:
             # Attempt to start server if not running
-            server_started = False
+            server_started: bool = False
             for method in ['direct', 'piped']:
                 logging.info(f"Attempting to start server using method: {method}")
                 if await server_manager.start_server(method=method):
@@ -54,27 +60,18 @@ async def main() -> None:
                 logging.error("All server startup methods failed. Exiting.")
                 sys.exit(1)
 
-        def cleanup_server():
-            try:
-                if server_manager.process:
-                    asyncio.run(server_manager.stop_server())
-            except (ProcessLookupError, AttributeError):
-                logging.info("Server process already terminated")
-
-        # Register cleanup functions
         atexit.register(lambda: save_config(config))
-        atexit.register(cleanup_server)
-
+        atexit.register(lambda: cleanup_server(server_manager))
 
         # Start the UI window with server manager
-        ui = UIManager(config, server_manager)
+        ui: UIManager = UIManager(config, server_manager)
         ui.run_window()
 
         # After window closes, stop the server if running
         if await server_manager.check_port():
             await server_manager.stop_server()
 
-    except Exception as e:
+    except Exception:
         logging.exception("Fatal error occurred")
         sys.exit(1)
 
@@ -83,6 +80,6 @@ if __name__ == '__main__':
         asyncio.run(main())
     except KeyboardInterrupt:
         logging.info("Application terminated by user")
-    except Exception as e:
+    except Exception:
         logging.exception("Fatal error in main")
         sys.exit(1)
