@@ -13,11 +13,20 @@ class AppConfig(BaseModel):
     window_title: str = 'Web UI'
     window_width: int = 1024
     window_height: int = 768
-    start_url: HttpUrl = 'http://127.0.0.1:8080/controls.html'
+    start_url: str = 'http://127.0.0.1:8080/'  # Use str, validate in __post_init__
     username: Optional[str] = None
     password: Optional[SecretStr] = None
     # Private attribute for encryption key
     _fernet_key: Optional[bytes] = None
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        # Validate start_url as a URL
+        from pydantic import HttpUrl, ValidationError, parse_obj_as
+        try:
+            parse_obj_as(HttpUrl, self.start_url)
+        except ValidationError:
+            raise ValueError(f"Invalid start_url: {self.start_url}")
 
     @property
     def fernet_key(self) -> Optional[bytes]:
