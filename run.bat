@@ -13,10 +13,10 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-REM Check Python version
-python -c "import sys; assert sys.version_info >= (3, 11), 'Python 3.11 or newer is required'" >nul 2>nul
+REM Check Python version (only allow 3.13.x)
+python -c "import sys; assert sys.version_info[:2] == (3, 11), 'Python 3.11.x is required'" >nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo Python 3.11 or newer is required
+    echo Python 3.11.x is required
     echo Current Python version:
     python --version
     pause
@@ -57,6 +57,15 @@ REM Activate virtual environment and run the application
 call %VENV_DIR%\Scripts\activate
 if %ERRORLEVEL% neq 0 (
     echo Failed to activate virtual environment
+    pause
+    exit /b 1
+)
+
+REM Check if Python executable exists in venv
+if not exist "%VENV_DIR%\Scripts\python.exe" (
+    echo ERROR: Python executable not found in virtual environment: %VENV_DIR%\Scripts\python.exe
+    echo The virtual environment in "%VENV_DIR%" might be corrupted.
+    echo Please try deleting the "%VENV_DIR%" directory and re-running this script.
     pause
     exit /b 1
 )
